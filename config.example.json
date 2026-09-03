@@ -1,0 +1,30 @@
+{
+  "username": "",
+  "interfaceOrder": ["plan"],
+  "batches": {
+    "plan": {
+      "name": "第一轮方案内课程",
+      "courses": [
+        {
+          "name": "课程名称关键字",
+          "menu": "推荐班级课程",
+          "priority": [
+            { "teacher": "优先教师" },
+            { "keywords": ["时间或班级关键字"], "teacher": "备用教师" }
+          ]
+        },
+        {
+          "name": "体育类课程名称关键字",
+          "menu": "体育俱乐部",
+          "priority": [{ "keywords": ["足球"], "teacher": "优先教师" }]
+        }
+      ]
+    }
+  },
+  "timing": { "waitForBatchStart": true, "autoStartTime": "2026-09-04 09:00:00", "startSlippageMs": 0 },
+  "retry": { "maxAttempts": 10, "baseDelayMs": 3000, "maxDelayMs": 60000 },
+  "loginWaitMs": 600000,
+  "busyMarkers": ["系统繁忙", "访问人数过多", "排队中", "请稍后重试", "服务器开小差", "加载失败"],
+  "browser": { "channel": "", "executablePath": "", "headless": false, "profileDir": ".edge-profile" },
+  "snapshotDir": "snapshots"
+}

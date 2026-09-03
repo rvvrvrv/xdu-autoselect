@@ -1,0 +1,13 @@
+# 运行时 / 个人数据 —— 不要提交
+config.json
+state.json
+*.log
+monitor-log.jsonl
+snapshots/
+.edge-profile/
+node_modules/
+runtime/node.exe
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
