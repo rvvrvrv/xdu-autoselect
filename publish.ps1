@@ -158,19 +158,20 @@ try {
 
   if ($OpenPr) {
     $headRef = "${Owner}:${Branch}"
+    $encodedHeadRef = [uri]::EscapeDataString($headRef)
+    $pullsEndpoint = "repos/${Owner}/${Repo}/pulls?head=${encodedHeadRef}&state=open&per_page=1"
     if ($preview) {
-      Invoke-Gh @('pr', 'list', '--repo', $repoRef, '--head', $headRef, '--state', 'open', '--json', 'url', '--jq', '.[0].url')
-      Write-Output "[DRY RUN] if no PR exists: $(Format-ExternalCommand -Command 'gh' -Arguments @('pr', 'create', '--repo', $repoRef, '--base', $Base, '--head', $Branch, '--title', $Title, '--body', $Message))"
+      Invoke-Gh @('api', '--method', 'GET', $pullsEndpoint)
+      Write-Output "[DRY RUN] if no PR exists: $(Format-ExternalCommand -Command 'gh' -Arguments @('api', '--method', 'POST', "repos/${Owner}/${Repo}/pulls", '-f', "title=$Title", '-f', "head=$Branch", '-f', "base=$Base", '-f', "body=$Message"))"
     } else {
-      $existingPr = & $ghPath pr list --repo $repoRef --head $headRef --state open --json url --jq '.[0].url'
+      $existingPr = & $ghPath api --method GET $pullsEndpoint --jq '.[0].html_url'
       if ($LASTEXITCODE -ne 0) {
         throw '无法查询已有 Pull Request。'
       }
       if ($existingPr) {
         Write-Host "[ok] PR: $existingPr" -ForegroundColor Green
       } else {
-        Invoke-Gh @('pr', 'create', '--repo', $repoRef, '--base', $Base, '--head', $Branch, '--title', $Title, '--body', $Message) | Out-Null
-        $createdPr = & $ghPath pr view --repo $repoRef --head $Branch --json url --jq '.url'
+        $createdPr = & $ghPath api --method POST "repos/${Owner}/${Repo}/pulls" -f "title=$Title" -f "head=$Branch" -f "base=$Base" -f "body=$Message" --jq '.html_url'
         if ($LASTEXITCODE -ne 0 -or -not $createdPr) {
           throw 'PR 已创建，但无法读取链接。'
         }
