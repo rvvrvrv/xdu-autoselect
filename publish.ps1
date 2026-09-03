@@ -1,89 +1,185 @@
 #Requires -Version 7.0
 <#
-  publish.ps1 - One-shot automation: create public repo + push branch + open PR for xdu-autoselect.
+  publish.ps1 - Create a public repository, publish a branch, and open a PR.
 
-  Prereqs (choose ONE):
-    * Install GitHub CLI and run `gh auth login`  (auto-requests repo / read:org / workflow)
-    * OR set env var GH_TOKEN to a classic PAT (requires `repo` scope) -- only needed when gh is absent.
+  Authentication is intentionally unified through GitHub CLI:
+    1. Install GitHub CLI (`gh`).
+    2. Run `gh auth login` once.
+    3. Run `gh auth setup-git` once.
 
-  Usage examples:
-    pwsh .\publish.ps1 -Owner rvvrvrv -Repo xdu-autoselect -Base main -CreateRepo -OpenPr
-    pwsh .\publish.ps1                                              # use defaults below
+  The script deliberately ignores GH_TOKEN and GITHUB_TOKEN while it runs, so
+  Git, gh, and this script all use the same credential stored by GitHub CLI.
+
+  Preview safely before changing anything:
+    pwsh .\publish.ps1 -CreateRepo -OpenPr -WhatIf
 #>
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-  [string]$Owner = "rvvrvrv",
-  [string]$Repo  = "xdu-autoselect",
+  [string]$Owner = 'rvvrvrv',
+  [string]$Repo = 'xdu-autoselect',
   [string]$Branch,
-  [string]$Base  = "main",
-  [string]$Message = "feat: update",
+  [string]$Base = 'main',
+  [string]$Message = 'feat: update',
   [string]$Title,
-  [string]$Description = "选课系统",
+  [string]$Description = '选课系统',
   [switch]$CreateRepo,
   [switch]$OpenPr
 )
 
-$ErrorActionPreference = "Stop"
-if (-not $Branch) { $Branch = "feat/" + (Get-Date -Format "MMdd-HHmm") }
-if (-not $Title)  { $Title  = "$Repo: $Message" }
+$ErrorActionPreference = 'Stop'
+$preview = [bool]$WhatIfPreference
 
-$gh = Get-Command gh -ErrorAction SilentlyContinue
-$Token = $env:GH_TOKEN
-if (-not $gh -and -not $Token) {
-  throw "缺少凭证：请安装 GitHub CLI 并运行 gh auth login；或设置环境变量 GH_TOKEN（classic PAT，需 repo scope）。"
-}
+if (-not $Branch) { $Branch = 'feat/' + (Get-Date -Format 'MMdd-HHmm') }
+if (-not $Title) { $Title = "${Repo}: $Message" }
 
-function Invoke-Api {
-  param([string]$Method,[string]$Uri,[System.Collections.IDictionary]$Body)
-  $h = @{ Accept = "application/vnd.github+json"; "User-Agent" = "publish.ps1" }
-  if ($Token) { $h.Authorization = "Bearer $Token" }
-  $p = @{ Method = $Method; Uri = $Uri; Headers = $h; ContentType = "application/json" }
-  if ($Body) { $p.Body = ($Body | ConvertTo-Json -Depth 5) }
-  Invoke-RestMethod @p
-}
-
-# 1) ensure public repo
-try {
-  Invoke-Api GET "https://api.github.com/repos/$Owner/$Repo" | Out-Null
-  Write-Host "[ok] repo exists: $Owner/$Repo" -ForegroundColor Green
-} catch {
-  if (-not $CreateRepo) { throw "仓库不存在，请加 -CreateRepo 以自动创建。" }
-  Write-Host "[..] creating public repo $Owner/$Repo ..." -ForegroundColor Cyan
-  Invoke-Api POST "https://api.github.com/user/repos" @{ name=$Repo; public=$true; description=$Description } | Out-Null
-  Start-Sleep -Seconds 3
-  Write-Host "[ok] repo created: $Owner/$Repo" -ForegroundColor Green
-}
-
-# 2) wire origin
-$url = "https://github.com/$Owner/$Repo.git"
-$cur = git remote get-url origin 2>$null
-if ($cur -and $cur -ne $url) { git remote set-url origin $url }
-elseif (-not $cur) { git remote add origin $url }
-Write-Host "[ok] origin -> $url" -ForegroundColor Green
-
-# 3) branch + commit + push
-git checkout -B $Branch | Out-Null
-git add -A
-if (-not (git diff --cached --quiet)) {
-  git commit -m $Message
-  Write-Host "[ok] committed: $Message" -ForegroundColor Green
+$ghCommand = Get-Command gh -ErrorAction SilentlyContinue
+if ($ghCommand) {
+  $ghPath = $ghCommand.Source
 } else {
-  Write-Host "[ok] nothing to commit, skip" -ForegroundColor Yellow
+  $installedGh = Join-Path $env:ProgramFiles 'GitHub CLI\gh.exe'
+  if (-not (Test-Path -LiteralPath $installedGh)) {
+    throw '未找到 GitHub CLI。请安装 gh 后执行 gh auth login。'
+  }
+  $ghPath = $installedGh
 }
-git push -u origin $Branch
-Write-Host "[ok] pushed origin/$Branch" -ForegroundColor Green
 
-# 4) open / reuse PR
-if ($OpenPr) {
-  if ($gh) {
-    gh pr create --repo "$Owner/$Repo" --base $Base --head $Branch --title $Title --body $Message 2>$null
-    $u = gh pr view --repo "$Owner/$Repo" --branch $Branch --json url -q .url 2>$null
-    if ($u) { Write-Host "[ok] PR: $u" -ForegroundColor Green } else { Write-Warning "PR 可能已存在，或 gh 未识别分支：$Branch" }
-  } else {
-    $q = [uri]::EscapeDataString("$Owner:$Branch")
-    $existing = try { Invoke-Api GET "https://api.github.com/repos/$Owner/$Repo/pulls?head=$q" } catch { $null }
-    $pr = if ($existing) { $existing | Select-Object -First 1 } else {
-      Invoke-Api POST "https://api.github.com/repos/$Owner/$Repo/pulls" @{ title=$Title; head=$Branch; base=$Base; body=$Message }
+function Format-ExternalCommand {
+  param([string]$Command, [string[]]$Arguments)
+
+  $renderedArguments = $Arguments | ForEach-Object {
+    if ($_ -match '\s') { '"' + $_.Replace('"', '\"') + '"' } else { $_ }
+  }
+  "$Command $($renderedArguments -join ' ')"
+}
+
+function Invoke-Gh {
+  param([string[]]$Arguments)
+
+  if ($preview) {
+    Write-Output "[DRY RUN] $(Format-ExternalCommand -Command 'gh' -Arguments $Arguments)"
+    return
+  }
+
+  & $ghPath @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "gh 命令失败：$(Format-ExternalCommand -Command 'gh' -Arguments $Arguments)"
+  }
+}
+
+function Invoke-Git {
+  param([string[]]$Arguments)
+
+  if ($preview) {
+    Write-Output "[DRY RUN] $(Format-ExternalCommand -Command 'git' -Arguments $Arguments)"
+    return
+  }
+
+  & git @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "git 命令失败：$(Format-ExternalCommand -Command 'git' -Arguments $Arguments)"
+  }
+}
+
+# Codex may inject a connector token. Do not let it override the user's gh login.
+$savedTokenEnvironment = @{}
+foreach ($name in 'GITHUB_TOKEN', 'GH_TOKEN') {
+  $savedTokenEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+  [Environment]::SetEnvironmentVariable($name, $null, 'Process')
+}
+
+try {
+  $repoRef = "${Owner}/${Repo}"
+  $remoteUrl = "https://github.com/${Owner}/${Repo}.git"
+
+  if ($preview) {
+    Invoke-Gh @('auth', 'status', '--hostname', 'github.com')
+    Invoke-Gh @('repo', 'view', $repoRef)
+    if ($CreateRepo) {
+      Write-Output "[DRY RUN] if repository is missing: $(Format-ExternalCommand -Command 'gh' -Arguments @('repo', 'create', $repoRef, '--public', '--description', $Description))"
     }
-    Write-Host "[ok] PR: $($pr.html_url)" -ForegroundColor Green
+  } else {
+    Invoke-Gh @('auth', 'status', '--hostname', 'github.com') | Out-Null
+    & $ghPath repo view $repoRef 2>$null
+    $repoExists = $LASTEXITCODE -eq 0
+    if (-not $repoExists) {
+      if (-not $CreateRepo) {
+        throw "仓库 $repoRef 不存在；如需自动创建，请加 -CreateRepo。"
+      }
+      Invoke-Gh @('repo', 'create', $repoRef, '--public', '--description', $Description) | Out-Null
+      Write-Host "[ok] repo created: $repoRef" -ForegroundColor Green
+    } else {
+      Write-Host "[ok] repo exists: $repoRef" -ForegroundColor Green
+    }
+  }
+
+  if ($preview) {
+    Invoke-Git @('remote', 'get-url', 'origin')
+    Write-Output "[DRY RUN] set origin to $remoteUrl when it is missing or points elsewhere"
+  } else {
+    $currentOrigin = & git remote get-url origin 2>$null
+    if ($LASTEXITCODE -eq 0 -and $currentOrigin -ne $remoteUrl) {
+      Invoke-Git @('remote', 'set-url', 'origin', $remoteUrl) | Out-Null
+    } elseif ($LASTEXITCODE -ne 0) {
+      Invoke-Git @('remote', 'add', 'origin', $remoteUrl) | Out-Null
+    }
+    Write-Host "[ok] origin -> $remoteUrl" -ForegroundColor Green
+  }
+
+  if ($preview) {
+    Invoke-Git @('show-ref', '--verify', '--quiet', "refs/heads/$Branch")
+    Write-Output "[DRY RUN] switch to existing branch '$Branch', or create it from the current commit"
+  } else {
+    & git show-ref --verify --quiet "refs/heads/$Branch"
+    if ($LASTEXITCODE -eq 0) {
+      Invoke-Git @('switch', $Branch) | Out-Null
+    } else {
+      Invoke-Git @('switch', '--create', $Branch) | Out-Null
+    }
+  }
+
+  if ($preview) {
+    Invoke-Git @('add', '-A')
+    Write-Output "[DRY RUN] commit staged changes with message: $Message"
+    Invoke-Git @('push', '--set-upstream', 'origin', $Branch)
+  } else {
+    Invoke-Git @('add', '-A') | Out-Null
+    & git diff --cached --quiet
+    if ($LASTEXITCODE -eq 1) {
+      Invoke-Git @('commit', '--message', $Message) | Out-Null
+      Write-Host "[ok] committed: $Message" -ForegroundColor Green
+    } elseif ($LASTEXITCODE -ne 0) {
+      throw '无法检查暂存区状态。'
+    } else {
+      Write-Host '[ok] nothing to commit, skip' -ForegroundColor Yellow
+    }
+    Invoke-Git @('push', '--set-upstream', 'origin', $Branch) | Out-Null
+    Write-Host "[ok] pushed origin/$Branch" -ForegroundColor Green
+  }
+
+  if ($OpenPr) {
+    $headRef = "${Owner}:${Branch}"
+    if ($preview) {
+      Invoke-Gh @('pr', 'list', '--repo', $repoRef, '--head', $headRef, '--state', 'open', '--json', 'url', '--jq', '.[0].url')
+      Write-Output "[DRY RUN] if no PR exists: $(Format-ExternalCommand -Command 'gh' -Arguments @('pr', 'create', '--repo', $repoRef, '--base', $Base, '--head', $Branch, '--title', $Title, '--body', $Message))"
+    } else {
+      $existingPr = & $ghPath pr list --repo $repoRef --head $headRef --state open --json url --jq '.[0].url'
+      if ($LASTEXITCODE -ne 0) {
+        throw '无法查询已有 Pull Request。'
+      }
+      if ($existingPr) {
+        Write-Host "[ok] PR: $existingPr" -ForegroundColor Green
+      } else {
+        Invoke-Gh @('pr', 'create', '--repo', $repoRef, '--base', $Base, '--head', $Branch, '--title', $Title, '--body', $Message) | Out-Null
+        $createdPr = & $ghPath pr view --repo $repoRef --head $Branch --json url --jq '.url'
+        if ($LASTEXITCODE -ne 0 -or -not $createdPr) {
+          throw 'PR 已创建，但无法读取链接。'
+        }
+        Write-Host "[ok] PR: $createdPr" -ForegroundColor Green
+      }
+    }
+  }
+} finally {
+  foreach ($name in 'GITHUB_TOKEN', 'GH_TOKEN') {
+    [Environment]::SetEnvironmentVariable($name, $savedTokenEnvironment[$name], 'Process')
   }
 }
