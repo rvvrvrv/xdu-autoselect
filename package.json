@@ -1,0 +1,16 @@
+{
+  "name": "xsxk-autoselect",
+  "version": "0.1.0",
+  "private": true,
+  "description": "西电选课系统自动选课脚本（验证码人工输入，选课/切换界面由脚本完成）",
+  "main": "select.js",
+  "scripts": {
+    "start": "node select.js",
+    "test": "node test-plan-config.js && node test-wizard-config.js",
+    "inspect": "node select.js --inspect",
+    "reset": "node select.js --reset"
+  },
+  "dependencies": {
+    "playwright-core": "^1.49.1"
+  }
+}
