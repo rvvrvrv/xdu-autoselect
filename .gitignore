@@ -11,3 +11,7 @@ runtime/node.exe
 # 系统 / 编辑器
 .DS_Store
 Thumbs.db
+
+# 认证 / 备份临时文件
+*.bak
+
