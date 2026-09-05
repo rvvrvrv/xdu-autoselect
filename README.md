@@ -44,22 +44,9 @@ Windows 可直接双击 `一键启动.bat`（自动装依赖、首次引导配�
 
 ```bash
 npm test
-npm run fresh        # 清测试缓存（state.json / courses.json / snapshots），登录态保留
-npm run fresh:login  # 连浏览器登录态一起清（彻底冷启，需重新登录）
 ```
 
-每次改动代码后建议先 `npm run fresh` 再测，避免断点状态/旧课程缓存干扰。
-
-## 本地调试（选课系统离线镜像）
-
-把选课系统抓成本地「死网站」，离线调试页面选择器（详见 [debug/README.md](debug/README.md)）：
-
-```bash
-node debug/capture-site.js      # 抓取：弹浏览器人工登录，之后全自动（默认只读，不动你的选课）
-node debug/dead-server.js 5173  # 本地回放：http://127.0.0.1:5173/__rendered
-```
-
-镜像输出在 `dead-site/`（已 gitignore，含个人信息，勿提交勿外传）。
+断点状态与课程缓存在 `state.json` / `courses.json`，删除即可从头测试。
 
 ## 免责声明
 
