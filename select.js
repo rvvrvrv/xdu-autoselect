@@ -3,8 +3,14 @@
  * 西电选课系统自动选课脚本（xsxk-autoselect）  v2（已按真实页面校准）
  *
  * 设计分工：
- *   - 登录（含验证码）：由人在弹出的浏览器窗口手动完成。
- *   - 进入选课界面、选课、确认、切换界面（登出→重新登录）、重试与翻车预案：由脚本完成。
+ *   - 登录（含验证码）：由人手动完成；脚本不代填、不代点，只等检测到你已进入系统。
+ *   - 进入选课界面、预定位（找课/展开/挑班）、开点提交、切换界面（登出→重新登录）、重试与翻车预案：由脚本完成。
+ *
+ * 抢课时序（毫秒只花在刀刃上）：
+ *   登录 → 预热进入选课页 → 等待开点（服务器时钟校准+保活）
+ *   → 临开点 90s~20s 窗口「预定位」：菜单/找行/展开/按优先级挑班，全部提前完成，绝不点选择
+ *   → 最后 10s 静默冲刺（零网络零 DOM）→ 开点瞬间只剩「点选择+确认」。
+ *   预定位失效（页面重渲染/掉线重登）自动回退完整流程。
  *
  * 已校准的页面结构（2026-09-02 实测）：
  *   登录页:      #loginDiv 登录卡片 / 登出后回到 index.html
@@ -77,8 +83,13 @@ function isDone(state, id) { return state.done.includes(id); }
 /* ---------------- 日志/交互 ---------------- */
 function ts() { return new Date().toLocaleString('zh-CN', { hour12: false }); }
 function log(...a) { console.log(`[${ts()}]`, ...a); }
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const ask = (q) => new Promise((r) => rl.question(q, r));
+/* readline 懒创建：被 configure.js require 复用时不得占用 stdin（否则双接口回显，按键重复） */
+let _rl = null;
+function getRl() {
+  if (!_rl) _rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  return _rl;
+}
+const ask = (q) => new Promise((r) => getRl().question(q, r));
 async function pauseForManual(text) {
   log('');
   log('************************************************************');
@@ -113,12 +124,14 @@ function snapshot(page, cfg, name) {
 }
 
 /* ---------------- 登录（人工） ---------------- */
+/* 只认"确凿已登录"证据：选课页 URL，或页面出现登录后才有的文案。
+   不再看"登录框是否消失"下结论（由 waitForManualLogin 跟踪），避免登录框
+   尚未渲染时被误判为已登录、脚本抢跑导航。 */
 async function detectLoggedIn(page) {
   try {
     if (page.url().includes('/elective/')) return true;
-    if (!(await visible(page, '#loginDiv', 1500))) return true;
     const txt = await bodyText(page);
-    if (txt.includes('开始选课') || txt.includes('退出') || txt.includes('切换轮次')) return true;
+    if (txt.includes('开始选课') || txt.includes('切换轮次') || txt.includes('退出')) return true;
   } catch (_) {}
   return false;
 }
@@ -127,27 +140,23 @@ async function waitForManualLogin(page, cfg, phaseLabel) {
   log('');
   log(`───────────────── 请人工登录 · ${phaseLabel} ─────────────────`);
   log('浏览器窗口已打开：' + INDEX_URL);
-  if (cfg.username) log('1) 学号已自动填入' + (cfg.password ? '，密码已自动填入' : '，请输密码'));
-  else log('1) 输入学号、密码');
-  log('2) 手动完成验证码（点击式/输入式）');
-  log('3) 点击“登 录”');
+  log('1) 在浏览器里输入学号、密码、验证码');
+  log('2) 点击“登 录”');
+  log('   （脚本不代填、不代点，只等你自己进入系统后自动继续）');
   log('（脚本等待登录成功，最长 ' + Math.round(cfg.loginWaitMs / 60000) + ' 分钟）');
   log('──────────────────────────────────────────────');
 
-  try {
-    const u = page.locator('#loginDiv input.el-input__inner').first();
-    if (await u.isVisible({ timeout: 3000 })) {
-      if (cfg.username) await u.fill(cfg.username);
-      if (cfg.password) {
-        const p = page.locator('#loginDiv input[type="password"]').first();
-        if (await p.isVisible({ timeout: 2000 })) await p.fill(cfg.password);
-      }
-    }
-  } catch (_) {}
-
+  let sawLoginDiv = false;
   const deadline = Date.now() + cfg.loginWaitMs;
   while (Date.now() < deadline) {
-    if (await detectLoggedIn(page)) {
+    let logged = await detectLoggedIn(page);
+    // 兜底信号：登录框出现过又消失（防 SPA 未渲染时的误判 —— 必须先见到过登录框）
+    if (!logged && sawLoginDiv && !(await visible(page, '#loginDiv', 400))) {
+      await sleep(900); // 二次确认，排除渲染抖动
+      if (!(await visible(page, '#loginDiv', 400))) logged = true;
+    }
+    if (!logged && !sawLoginDiv && (await visible(page, '#loginDiv', 600))) sawLoginDiv = true;
+    if (logged) {
       // 关闭「我已知晓」必修课提示（若出现）
       try {
         const dlg = page.locator('.el-dialog__wrapper').filter({ hasText: '我已知晓' }).first();
@@ -169,6 +178,66 @@ async function waitForManualLogin(page, cfg, phaseLabel) {
 }
 
 /* ---------------- 批次/进入选课页 ---------------- */
+
+/**
+ * 确保进入选课界面 —— 由用户主导：
+ *   1) 用户已停在选课页（自己点进来的）：直接采用当前 URL 里的批次；
+ *   2) 断点续跑有记录：自动恢复上次用户选的批次（换轮次请 --reset）；
+ *   3) 首次：等待用户自己在浏览器里点击进入对应轮次，脚本只监测 URL，不代替任何点击。
+ */
+async function enterBatchUserDriven(page, cfg, batchKey, state, batch) {
+  const cur = page.url().match(/grablessons\?batchId=([A-Za-z0-9]+)/);
+  if (cur && page.url().includes('/elective/')) {
+    state.batchCode[batchKey] = cur[1];
+    saveState(state);
+    log('✓ 检测到你已进入选课界面（批次 ' + cur[1] + '），采用当前轮次');
+    return;
+  }
+  if (state.batchCode && state.batchCode[batchKey]) {
+    log('↻ 断点记录批次 ' + state.batchCode[batchKey] + '，自动恢复（如需换轮次：node select.js --reset）');
+    await enterBatch(page, cfg, batchKey, state, {});
+    return;
+  }
+  log('');
+  log(`───────────────── 请进入选课界面 · ${batch.name} ─────────────────`);
+  log('请在浏览器里点击进入「' + batch.name + '」对应的选课轮次（开始选课）。');
+  log('脚本只监测页面，不会代替任何点击；检测到你进入后自动继续。');
+  const deadline = Date.now() + (cfg.loginWaitMs || 600000);
+  while (Date.now() < deadline) {
+    const m = page.url().match(/grablessons\?batchId=([A-Za-z0-9]+)/);
+    if (m && page.url().includes('/elective/')) {
+      state.batchCode[batchKey] = m[1];
+      saveState(state);
+      log(`✓ 检测到你已进入选课界面（批次 ${m[1]}）`);
+      // 轻校验：提示轮次类型是否与配置匹配
+      const menus = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('ul.teachingClassTypeMenu li.el-menu-item')).map((el) => (el.innerText || '').trim()),
+      ).catch(() => []);
+      if (batchKey === 'plan' && menus.length && !menus.some((t) => /推荐班级课程|体育俱乐部/.test(t))) {
+        log(`⚠ 当前轮次菜单（${menus.join('/')}）里没有方案内课程入口 —— 若点错轮次请退出重选`);
+      }
+      // 开点时间自动检测：读轮次自带数据（sessionStorage，不调接口）
+      try {
+        const raw = await page.evaluate(() => sessionStorage.getItem('currentBatch') || '');
+        const info = raw ? JSON.parse(raw) : null;
+        if (info && info.beginTime) {
+          log(`ℹ 本轮时间：${info.beginTime} ~ ${info.endTime || '?'}${info.state ? '（' + info.state + '）' : ''}`);
+          cfg.timing = cfg.timing || {};
+          if (cfg.timing.waitForBatchStart && (!cfg.timing.autoStartTime || cfg.timing.autoStartTime === 'auto')) {
+            cfg.timing.autoStartTime = info.beginTime;
+            log(`⚡ autoStartTime 未填 → 自动采用本轮官方开点时间 ${info.beginTime}`);
+          } else if (!cfg.timing.waitForBatchStart && info.state === '未开始') {
+            log('ℹ 轮次尚未开始；如需定时抢课，把 config 的 timing.waitForBatchStart 设为 true（autoStartTime 可留空自动读取）');
+          }
+        }
+      } catch (_) {}
+      return;
+    }
+    await sleep(1000);
+  }
+  throw new Error('等待进入选课界面超时（可在浏览器里进入后重试，或 Ctrl+C 重跑）');
+}
+
 async function getBatchCode(page, batchName) {
   // 登录过渡竞态：重试最多 5 次（每次 600ms）
   for (let i = 0; i < 5; i++) {
@@ -269,8 +338,9 @@ async function checkSession(page, batchKey, state) {
   return true;
 }
 
-/** 等待到设定的开始时间（服务器时钟校准；等待期保活；临界 10s 内零网络，绝不挤占开点瞬间） */
-async function waitToStart(cfg, page, batchKey, state) {
+/** 等待到设定的开始时间（服务器时钟校准；等待期保活；临界 10s 内零网络，绝不挤占开点瞬间）
+ *  hooks.onApproach：临近开点（90s~20s 窗口）执行一次，用于预定位（找行/展开/挑班，不提交） */
+async function waitToStart(cfg, page, batchKey, state, hooks = {}) {
   if (!cfg.timing || !cfg.timing.waitForBatchStart || !cfg.timing.autoStartTime) return;
   const start = new Date((cfg.timing.autoStartTime || '').replace(/-/g, '/'));
   if (isNaN(start)) return;
@@ -295,7 +365,7 @@ async function waitToStart(cfg, page, batchKey, state) {
   let offset = await serverOffset();
   log(`⏳ 等待批次开始（服务器时钟偏差 ${offset >= 0 ? '+' : ''}${(offset / 1000).toFixed(1)}s）。页面已预热：每 20s 探测、临近 60s 加密到 5s/次、最后 10s 静默冲刺，开点瞬间不被任何检查挤占。`);
 
-  let lastProbe = 0, lastClick = 0, lastCal = 0;
+  let lastProbe = 0, lastClick = 0, lastCal = 0, preDone = false;
   // 保活前先做一次完整探测（若此刻已掉线早发现）
   if (await checkSession(page, batchKey, state) === false) {
     log('⚠ 预热后会话即不可用，等待重登逻辑将在首次探测后触发（见下）。');
@@ -329,8 +399,15 @@ async function waitToStart(cfg, page, batchKey, state) {
         await waitForManualLogin(page, cfg, (cfg.batches[batchKey] || {}).name + '（掉线重新登录）');
         await enterBatch(page, cfg, batchKey, state, {});
         lastProbe = Date.now();
+        preDone = false; // 掉线重登后页面已变，预定位需要重来
         continue;
       }
+    }
+    // 开点前预定位：90s~20s 窗口执行一次（找行/展开/挑班，不提交；开点瞬间只剩提交点击）
+    if (hooks.onApproach && !preDone && remain < 90000 && remain > 20000) {
+      preDone = true;
+      log('⚡ 临近开点，开始预定位（提前完成找课/展开/挑班）…');
+      try { await hooks.onApproach(); } catch (e) { log('⚠ 预定位出错：' + (e && e.message ? e.message : e)); }
     }
     // UI 点击保活（仅 60s 线外执行，避免临近时页面切换干扰）
     if (remain > 60000 && Date.now() - lastClick > 60000) {
@@ -618,6 +695,94 @@ async function logout(page, cfg) {
 
 /* ---------------- 选课动作 ---------------- */
 
+/** 某一行展开后的教学班卡片（作用域限定在该行的展开容器，多行同时展开时也不会串位） */
+function rowCards(page, row) {
+  return row.locator('xpath=following-sibling::tr[1][td[contains(@class,"el-table__expanded-cell")]]//div[contains(@class,"jxb-card")]');
+}
+
+/** 展开一行（若未展开），返回作用域限定的卡片 locator；失败返回 null */
+async function expandRowScoped(page, row) {
+  let cards = rowCards(page, row);
+  if (await cards.count() > 0) return cards;
+  const icon = row.locator('.el-table__expand-icon').first();
+  if (!(await icon.count())) return null;
+  await icon.evaluate((el) => el.click()).catch(() => {});
+  try { await cards.first().waitFor({ state: 'visible', timeout: 5000 }); } catch (_) {}
+  return (await cards.count() > 0) ? cards : null;
+}
+
+/**
+ * 开点前预定位：菜单 → 找行 → 展开 → 按优先级挑卡。只定位，绝不点「选择」。
+ * 返回 { rowIdx, cardIdx, cardKey, cardInfo, menuLabel, courseName }；已选返回 { already:true }；失败返回 null。
+ */
+async function prePositionCourse(page, cfg, course) {
+  try {
+    const strategy = resolvePlanCourse(course);
+    if (!(await menuTo(page, strategy.menuLabel))) return null;
+    const row = await findRowAcrossPages(page, course.name);
+    if (!row) return null;
+    if (await rowIsChosen(row)) return { already: true };
+    const cards = await expandRowScoped(page, row);
+    if (!cards) return null;
+    let cIdx = -1;
+    if (strategy.priority) cIdx = await pickCardByPredicate(cards, strategy.priority);
+    else cIdx = await pickCardIndex(cards, strategy.teacher);
+    if (cIdx < 0) return null;
+    // 记录行索引（el-table__row 集合不含展开容器行，索引稳定）
+    const rows = page.locator('.el-table__body tr.el-table__row');
+    const nameKey = String(course.name).replace(/\s+/g, '');
+    let rowIdx = -1;
+    for (let i = 0, n = await rows.count(); i < n; i++) {
+      const t = (await rows.nth(i).innerText().catch(() => '')).replace(/\s+/g, '');
+      if (t.includes(nameKey)) { rowIdx = i; break; }
+    }
+    if (rowIdx < 0) return null;
+    const cardInfo = (await cards.nth(cIdx).innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+    return {
+      rowIdx, cardIdx: cIdx, cardInfo,
+      cardKey: cardInfo.replace(/\s+/g, '').slice(0, 24),
+      menuLabel: strategy.menuLabel, courseName: course.name,
+    };
+  } catch (_) { return null; }
+}
+
+/**
+ * 开点提交：优先走预定位结果（零导航，直接点教学班「选择」），预定位失效则回退完整重试流程。
+ */
+async function submitPlanCourse(page, cfg, course, label, target) {
+  if (target && target.cardIdx >= 0 && target.rowIdx >= 0) {
+    try {
+      const row = page.locator('.el-table__body tr.el-table__row').nth(target.rowIdx);
+      const rowTxt = (await row.innerText().catch(() => '')).replace(/\s+/g, '');
+      if (!rowTxt.includes(String(course.name).replace(/\s+/g, ''))) {
+        log(`  ⚠ 预定位失效（行已变化），转完整流程`);
+      } else {
+        const cards = rowCards(page, row);
+        const txt = (await cards.nth(target.cardIdx).innerText().catch(() => '')).replace(/\s+/g, '');
+        if (!txt || !txt.startsWith(target.cardKey)) {
+          log(`  ⚠ 预定位失效（卡片已变化），转完整流程`);
+        } else {
+          if (await rowIsChosen(row)) { log(`⏭ 「${label}」已选，跳过`); return 'already'; }
+          log(`  ⚡ 预定位直接提交：${target.cardInfo.slice(0, 70)}`);
+          await clickCardSelect(cards, target.cardIdx);
+          await confirmIfAny(page, cfg);
+          await sleep(600);
+          if (await detectSuccess(page, cfg, row, course.name)) {
+            log(`  ✓ 「${label}」选课成功（预定位路径）`);
+            return true;
+          }
+          if (!(await detectFailure(page, cfg))) {
+            log(`  ✓ 「${label}」已提交且无失败提示 → 视为已进入选课队列（预定位路径）`);
+            return true;
+          }
+          log(`  ✗ 明确失败，转完整重试流程`);
+        }
+      }
+    } catch (_) {}
+  }
+  return selectPlanCourse(page, cfg, course, label);
+}
+
 /**
  * 将一门方案内课程解析成统一的菜单与教学班优先级配置。
  * 新配置使用 menu/priority；section/teacher/clubPriority 为兼容旧配置保留。
@@ -848,8 +1013,9 @@ async function main() {
   let lastError = null;
 
   try {
-    // 抢课时序：先登录 → 预热进入选课页 → 精确等待开点（服务器时钟）→ 到点立即选课
+    // 抢课时序：先登录 → 预热进入选课页 → 精确等待开点（临近时预定位）→ 到点立即提交
     // （--now 演练/诊断模式跳过等待）
+    const preTargets = {};
     for (const batchKey of steps) {
       const batch = cfg.batches[batchKey];
       if (!batch) { log(`✗ 配置中不存在批次：${batchKey}`); continue; }
@@ -865,11 +1031,29 @@ async function main() {
       }
 
       if (!isDone(state, batchKey + '/enter')) {
-        await enterBatch(page, cfg, batchKey, state, { skipReady: mode === 'inspect' });
+        await enterBatchUserDriven(page, cfg, batchKey, state, batch); // 用户自己点进轮次；断点则自动恢复
         markDone(state, batchKey + '/enter');
       }
 
-      if (!noNow) await waitToStart(cfg, page, batchKey, state);   // 页面已预热，等待到点（服务器时钟校准+保活）
+      if (!noNow) await waitToStart(cfg, page, batchKey, state, {
+        onApproach: async () => {
+          if (batchKey !== 'plan' || !(batch.courses || []).length) return;
+          for (const course of batch.courses) {
+            const label0 = course.name + (course.teacher ? '@' + course.teacher : '');
+            if (isDone(state, batchKey + '/选:' + label0)) continue;
+            const t = await prePositionCourse(page, cfg, course);
+            if (t && t.already) {
+              preTargets[label0] = { already: true };
+              log(`  ⚡ 预定位：「${course.name}」当前已选，届时直接跳过`);
+            } else if (t) {
+              preTargets[label0] = t;
+              log(`  ⚡ 预定位：「${course.name}」→ ${t.cardInfo.slice(0, 60)}`);
+            } else {
+              log(`  ⚠ 预定位未成功：「${course.name}」（开点后走完整流程）`);
+            }
+          }
+        },
+      });   // 页面已预热，等待到点（服务器时钟校准+保活+临开点预定位）
 
       if (mode === 'inspect') {
         await sleep(4000);
@@ -888,7 +1072,9 @@ async function main() {
           const label = course.name + (course.teacher ? '@' + course.teacher : '');
           const doneId = batchKey + '/选:' + label;
           if (isDone(state, doneId)) { log(`⏭ 已完成：「${label}」`); continue; }
-          const ok = await selectPlanCourse(page, cfg, course, label);
+          const target = preTargets[label];
+          if (target && target.already) { log(`⏭ 「${label}」预定位显示已选，跳过`); markDone(state, doneId); continue; }
+          const ok = await submitPlanCourse(page, cfg, course, label, target);
           if (ok === true || ok === 'already') markDone(state, doneId);
           else {
             log(`✗ 「${label}」多次尝试未成功 → 人工接管`);
@@ -955,7 +1141,7 @@ async function main() {
     await P('出现异常。请先在浏览器手动处理，或 Ctrl+C 退出后重新运行。').catch(() => {});
   } finally {
     try { await browser.close(); } catch (_) {}
-    rl.close();
+    if (_rl) _rl.close();
     if (lastError && mode === 'run') process.exitCode = 1;
   }
 }
@@ -965,7 +1151,7 @@ if (require.main === module) {
 }
 
 module.exports = {
-  loadConfig, waitForManualLogin, getBatchCode, enterBatch, snapshot, sleep,
+  loadConfig, waitForManualLogin, getBatchCode, enterBatch, enterBatchUserDriven, snapshot, sleep,
   bodyText, INDEX_URL, GRABLESSONS, BASE_URL, detectLoggedIn, menuTo, courseRows,
-  resolvePlanCourse,
+  resolvePlanCourse, prePositionCourse, submitPlanCourse, rowCards,
 };

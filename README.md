@@ -11,36 +11,55 @@
 - 按 `config` 顺序逐门抢课（正选排队制，点了并确认即进队，不重复提交）
 - 教师 / 关键词优先级选择教学班
 - 服务器时钟校准 + 开点前 10s 硬临界（零网络、秒级出手）
+- **开点前预定位**：找课/展开/挑班在临开点 90s 窗口提前完成，开点瞬间只剩提交点击
+- **登录零自动化**：不代填、不代点，检测到你进入系统后才继续
 - 等待期保活、掉线自动提示重登、断点续跑
 - 浏览器自动检测：Edge → Chrome → Chromium
-- 交互式配置向导 + 一键启动
+- 交互式配置向导（登录后自动爬课程列表，按编号快捷勾选）+ 一键启动
 
 ## 使用
 
-需要 Node.js（>=16），并在项目目录安装依赖：
+需要 Node.js（>=20，因 playwright-core 要求），并在项目目录安装依赖：
 
 ```bash
 npm install
-cp config.example.json config.json   # 然后用编辑器或向导填写你的课程
-node configure.js                    # 交互式向导，生成 config.json
+node configure.js                    # 配置向导：登录后自动抓取课程列表，按编号快捷勾选
 node select.js                       # 按配置抢课
 ```
 
 Windows 可直接双击 `一键启动.bat`（自动装依赖、首次引导配置、然后抢课）。
+电脑小白请看 [使用说明.txt](使用说明.txt)（双击即开，手把手 8 步上手）。
+
+配置向导流程：浏览器弹出 → **人工登录（含验证码）** → 脚本只读爬取当前批次的课程/教师/容量数据 → 终端列出编号列表 → 输入编号勾选课程、再按优先级勾选教学班 → 自动生成 `config.json`（登录态会保留，抢课时无需再登录）。也可选手动填写模式（旧向导）。
 
 ## 配置
 
 参照 `config.example.json`。关键项：
 
 - `batches.plan.courses`：方案内课程清单（`name` / `menu` / `priority` 或旧字段 `section`、`teacher`、`clubPriority`）
-- `timing.autoStartTime`：开点时间（脚本等待到点再出手）
+- `timing.autoStartTime`：开点时间。`waitForBatchStart: true` 时等待到点出手；**autoStartTime 留空（或填 "auto"）会自动读取你进入轮次后的官方开始时间**，无需手填
 - `browser`：浏览器类型（`channel` / `executablePath`，留空自动检测）
 
 ## 测试
 
 ```bash
 npm test
+npm run fresh        # 清测试缓存（state.json / courses.json / snapshots），登录态保留
+npm run fresh:login  # 连浏览器登录态一起清（彻底冷启，需重新登录）
 ```
+
+每次改动代码后建议先 `npm run fresh` 再测，避免断点状态/旧课程缓存干扰。
+
+## 本地调试（选课系统离线镜像）
+
+把选课系统抓成本地「死网站」，离线调试页面选择器（详见 [debug/README.md](debug/README.md)）：
+
+```bash
+node debug/capture-site.js      # 抓取：弹浏览器人工登录，之后全自动（默认只读，不动你的选课）
+node debug/dead-server.js 5173  # 本地回放：http://127.0.0.1:5173/__rendered
+```
+
+镜像输出在 `dead-site/`（已 gitignore，含个人信息，勿提交勿外传）。
 
 ## 免责声明
 

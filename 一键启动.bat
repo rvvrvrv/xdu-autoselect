@@ -1,10 +1,13 @@
 @echo off
 setlocal
-chcp 65001 >nul 2>&1
-title 西电选课助手 - 一键启动
 cd /d "%~dp0"
+title XDU Course Picker
 
-rem ---------- 找 Node：优先便携 runtime\node.exe，其次系统 PATH ----------
+rem NOTE: keep this file ASCII-only and CRLF. Do NOT add Chinese echo lines here --
+rem cmd garbles UTF-8 batch files (parser loses byte sync, lines get cut mid-token).
+rem All Chinese text is printed by node instead (console API, codepage-independent).
+
+rem ---------- Find Node.js: prefer portable runtime\node.exe, then system PATH ----------
 set "NODE_EXE="
 if exist "runtime\node.exe" set "NODE_EXE=runtime\node.exe"
 if not defined NODE_EXE (
@@ -13,60 +16,57 @@ if not defined NODE_EXE (
 )
 if not defined NODE_EXE (
   echo.
-  echo  本机未检测到 Node.js。
-  echo  请让分享者把官方 node.exe 放到本文件夹 runtime\ 目录；
-  echo  或到 https://nodejs.org 下载 LTS 版并安装。
+  echo  Node.js was not found on this computer.
+  echo  Ask the sender to put the official node.exe into the runtime\ folder,
+  echo  or download and install the LTS version from https://nodejs.org
+  echo  See runtime\README.txt for details.
   echo.
   pause
   exit /b 1
 )
 
-echo ============================================
-echo   西电选课助手
-echo   - 首次运行会弹出问答，按提示填你的课程
-echo   - 到点后浏览器弹出，人工输验证码即可
-echo   - 其余自动完成
-echo ============================================
+rem ---------- Banner (Chinese, printed by node) ----------
+"%NODE_EXE%" configure.js --banner
 
-rem ---------- 依赖：依赖已随包提供则跳过；否则尽力安装 ----------
+rem ---------- Dependencies: skip if bundled, otherwise best-effort install ----------
 if not exist "node_modules" (
   where npm >nul 2>&1
   if not errorlevel 1 (
     echo.
-    echo  [首次] 正在安装依赖，请稍候...
+    echo  [First run] Installing dependencies, please wait...
     call npm install
     if errorlevel 1 (
       echo.
-      echo  依赖安装失败。请检查网络后重新双击本脚本。
+      echo  Dependency installation failed. Check your network and double-click this file again.
       pause
       exit /b 1
     )
   ) else (
     echo.
-    echo  缺少依赖 node_modules，且本机无 npm。
-    echo  请让分享者补全 node_modules 后重新发送。
+    echo  node_modules is missing and npm is not available.
+    echo  Ask the sender to include the node_modules folder.
     pause
     exit /b 1
   )
 )
 
-rem ---------- 首次配置：已填课程则跳过向导 ----------
+rem ---------- First-run wizard: skipped when courses are already configured ----------
 call "%NODE_EXE%" configure.js --check
 if errorlevel 1 (
   echo.
-  echo  [首次配置] 请填写你的课程...
+  echo  [First run] Course wizard: login in the browser, then pick courses by number.
   call "%NODE_EXE%" configure.js
   if errorlevel 1 (
     echo.
-    echo  配置未完成，请重新双击运行。
+    echo  Configuration was not finished. Please double-click this file again.
     pause
     exit /b 1
   )
 )
 
 echo.
-echo  开始抢课。浏览器弹出后请人工登录 + 输验证码。
-echo  (本窗口请勿关闭，看日志即可)
+echo  Starting. The browser will open - please log in and type the captcha manually.
+echo  (Keep this window open and watch the log)
 call "%NODE_EXE%" select.js
 echo.
 pause

@@ -6,9 +6,11 @@
   "main": "select.js",
   "scripts": {
     "start": "node select.js",
-    "test": "node test-plan-config.js && node test-wizard-config.js",
+    "test": "node test-plan-config.js && node test-wizard-config.js && node test-course-catalog.js && node test-crawl-fixture.js",
     "inspect": "node select.js --inspect",
-    "reset": "node select.js --reset"
+    "reset": "node select.js --reset",
+    "fresh": "node debug/fresh.js",
+    "fresh:login": "node debug/fresh.js --login"
   },
   "dependencies": {
     "playwright-core": "^1.49.1"

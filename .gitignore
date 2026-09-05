@@ -15,3 +15,11 @@ Thumbs.db
 # 认证 / 备份临时文件
 *.bak
 
+# 本地站点镜像（学校系统内容 + 登录态，绝不入库）
+dead-site/
+.debug-profile/
+.browser-profile/
+
+# 打包产物
+dist/
+

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!-- 测试夹具：行/卡片/菜单片段取自真实快照（姓名已匿名化），JS 模拟 Element UI 的展开行为。
+     供 test-crawl-fixture.js 离线回归 configure.crawlMenu()。重新生成：node debug/build-fixture.js -->
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>fixture grablessons</title></head>
+<body>
+<ul role="menubar" class="el-menu-demo teachingClassTypeMenu cv-pull-left el-menu--horizontal el-menu" style="background-color: rgb(38, 85, 200);"><!----> <li role="menuitem" tabindex="-1" class="el-menu-item is-active" style="color: rgb(255, 208, 75); border-bottom-color: rgb(255, 208, 75); background-color: rgb(38, 85, 200);"><span>推荐班级课程</span></li><li role="menuitem" tabindex="-1" class="el-menu-item" style="color: rgb(255, 255, 255); border-bottom-color: transparent; background-color: rgb(38, 85, 200);"><span>体育俱乐部</span></li><li role="menuitem" tabindex="-1" class="el-menu-item" style="color: rgb(255, 255, 255); border-bottom-color: transparent; background-color: rgb(38, 85, 200);"><span>课程查询(属性以方案为准)</span></li><li role="menuitem" tabindex="-1" class="el-menu-item" style="color: rgb(255, 255, 255); border-bottom-color: transparent; background-color: rgb(38, 85, 200);"><span>已选课程</span></li></ul>
+<div class="el-table__body-wrapper"><table class="el-table__body"><tbody>
+<tr data-exp="expA" class="el-table__row expanded"><td rowspan="1" colspan="1" class="el-table_1_column_2  "><div class="cell"><div class="has-choosed-course"><div class="kcbz-content"><!----></div> <span>24PY2001</span> <div class="kcxqbz"><!----></div></div></div></td><td rowspan="1" colspan="1" class="el-table_1_column_3  "><div class="cell"><div><span>大学物理(Ⅱ)</span> <!----></div></div></td><td rowspan="1" colspan="1" class="el-table_1_column_4  "><div class="cell">1</div></td><td rowspan="1" colspan="1" class="el-table_1_column_5  "><div class="cell">大类通识课</div></td><td rowspan="1" colspan="1" class="el-table_1_column_6  "><div class="cell">必修</div></td><td rowspan="1" colspan="1" class="el-table_1_column_7  "><div class="cell">物理学院</div></td><td rowspan="1" colspan="1" class="el-table_1_column_8  "><div class="cell">4</div></td><td rowspan="1" colspan="1" class="el-table_1_column_1  undefined el-table__expand-column"><div class="cell"><div class="el-table__expand-icon el-table__expand-icon--expanded"><i class="el-icon el-icon-arrow-right"></i></div></div></td></tr>
+<tr data-exp="expB" class="el-table__row expanded"><td rowspan="1" colspan="1" class="el-table_1_column_2  "><div class="cell"><div class="kcbz-wrap"><div class="kcbz-content"><!----></div> <span>24HE0003</span> <div class="kcxqbz"><!----></div></div></div></td><td rowspan="1" colspan="1" class="el-table_1_column_3  "><div class="cell"><div><span>大学体育(Ⅲ)</span> <!----></div></div></td><td rowspan="1" colspan="1" class="el-table_1_column_4  "><div class="cell">15</div></td><td rowspan="1" colspan="1" class="el-table_1_column_5  "><div class="cell">公共通识课</div></td><td rowspan="1" colspan="1" class="el-table_1_column_6  "><div class="cell">必修</div></td><td rowspan="1" colspan="1" class="el-table_1_column_7  "><div class="cell">体育部</div></td><td rowspan="1" colspan="1" class="el-table_1_column_8  "><div class="cell">0.5</div></td><td rowspan="1" colspan="1" class="el-table_1_column_1  undefined el-table__expand-column"><div class="cell"><div class="el-table__expand-icon el-table__expand-icon--expanded"><i class="el-icon el-icon-arrow-right"></i></div></div></td></tr>
+</tbody></table></div>
+<template id="expA"><tr><td colspan="8" class="el-table__expanded-cell"><div class="cv-clearfix el-col el-col-24"><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[11]]甲老师" class="one-row"><span>[11</span> <!----> <span>]甲老师</span></div> <div class="tags-line"><!----> <span class="el-tag el-tag--success el-tag--mini el-tag--dark">
+                                            已选
+                                        </span> <!----></div></div> <div title="1-7周,9-17周 星期二 3-4节 B-307,1-3周,5-17周 星期四 1-2节 B-307" class="card-item pc-card-ypsjdd">
+                                1-7周,9-17周 星期二 3-4节 B-307,1-3周,5-17周 星期四 1-2节 B-307
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">113人</div></div> <div class="card-item"><span>已选人数：</span> <span>107</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-plain is-round"><!----><!----><span>退选
+                                        </span></button></div></div></div></div></div></td></tr></template>
+<template id="expB"><tr><td colspan="8" class="el-table__expanded-cell"><div class="cv-clearfix el-col el-col-24"><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[142]-基础体能俱乐部]王老师" class="one-row"><span>[142</span> <span>-基础体能俱乐部</span> <span>]王老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][142]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">40人</div></div> <div class="card-item"><span>已选人数：</span> <span>39</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[143]-基础体能俱乐部]赵老师" class="one-row"><span>[143</span> <span>-基础体能俱乐部</span> <span>]赵老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][143]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span>40</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[144]-体育舞蹈俱乐部（拉丁舞）]乙老师" class="one-row"><span>[144</span> <span>-体育舞蹈俱乐部（拉丁舞）</span> <span>]乙老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][144]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">38人</div></div> <div class="card-item"><span>已选人数：</span> <span>34</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[145]-足球俱乐部（上）]丙老师" class="one-row"><span>[145</span> <span>-足球俱乐部（上）</span> <span>]丙老师</span></div> <div class="tags-line"><!----> <span class="el-tag el-tag--success el-tag--mini el-tag--dark">
+                                            已选
+                                        </span> <!----></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-plain is-round"><!----><!----><span>退选
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[146]-乒乓球俱乐部（上）]丁老师" class="one-row"><span>[146</span> <span>-乒乓球俱乐部（上）</span> <span>]丁老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][146]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[147]-乒乓球俱乐部（上）]戊老师" class="one-row"><span>[147</span> <span>-乒乓球俱乐部（上）</span> <span>]戊老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][147]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span>40</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[148]-羽毛球俱乐部（上）]己老师" class="one-row"><span>[148</span> <span>-羽毛球俱乐部（上）</span> <span>]己老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][148]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">40人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[149]-羽毛球俱乐部（上）]庚老师" class="one-row"><span>[149</span> <span>-羽毛球俱乐部（上）</span> <span>]庚老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][149]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">38人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[150]-羽毛球俱乐部（上）]辛老师" class="one-row"><span>[150</span> <span>-羽毛球俱乐部（上）</span> <span>]辛老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][150]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[151]-跆拳道俱乐部（上）]壬老师" class="one-row"><span>[151</span> <span>-跆拳道俱乐部（上）</span> <span>]壬老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][151]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">40人</div></div> <div class="card-item"><span>已选人数：</span> <span>37</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[152]-网球俱乐部（上）]癸老师" class="one-row"><span>[152</span> <span>-网球俱乐部（上）</span> <span>]癸老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][152]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">40人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[153]-健身瑜伽俱乐部]子老师" class="one-row"><span>[153</span> <span>-健身瑜伽俱乐部</span> <span>]子老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][153]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">40人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[154]-橄榄球俱乐部]丑老师" class="one-row"><span>[154</span> <span>-橄榄球俱乐部</span> <span>]丑老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][154]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">38人</div></div> <div class="card-item"><span>已选人数：</span> <span>35</span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[155]-游泳俱乐部]寅老师" class="one-row"><span>[155</span> <span>-游泳俱乐部</span> <span>]寅老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][155]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">20人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div><div class="el-card jxb-card cv-pull-left is-hover-shadow"><!----><div class="el-card__body"><div class="card-item head"><div title="[156]-篮球俱乐部（上）]卯老师" class="one-row"><span>[156</span> <span>-篮球俱乐部（上）</span> <span>]卯老师</span></div> <div class="tags-line"><!----> <!----> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark" title="[大学体育(Ⅲ)][145]上课时间[2周,5-16周 星期五 第5-6节]-[大学体育(Ⅲ)][156]上课时间[2周,5-16周 星期五 第5-6节]冲突">
+                                        课程冲突
+                                    </span></div></div> <div title="2周,5-16周 星期五 5-6节 " class="card-item pc-card-ypsjdd">
+                                2周,5-16周 星期五 5-6节 
+                            </div> <div class="card-item cv-clearfix"><div class="label cv-pull-left">课容量:</div> <div class="value cv-pull-left">41人</div></div> <div class="card-item"><span>已选人数：</span> <span class="el-tag el-tag--danger el-tag--mini el-tag--dark">
+                                    已满
+                                </span> <!----></div> <!----> <div class="card-item"><div class="el-row"><button type="button" class="el-button el-button--default el-button--mini is-round"><!----><!----><span>
+                                        教学班详情
+                                    </span></button> <button type="button" class="el-button el-button--primary el-button--mini is-round"><!----><!----><span>选择
+                                        </span></button></div></div></div></div></div></td></tr></template>
+<script>
+document.querySelectorAll('tr[data-exp]').forEach(function (row) {
+  var icon = row.querySelector('.el-table__expand-icon');
+  if (!icon) return;
+  icon.addEventListener('click', function () {
+    var old = row.nextElementSibling;
+    if (old && old.classList.contains('exp-holder')) {
+      old.remove(); icon.classList.remove('el-table__expand-icon--expanded'); return;
+    }
+    var tr = document.getElementById(row.getAttribute('data-exp')).content.firstElementChild.cloneNode(true);
+    tr.classList.add('exp-holder');
+    row.after(tr);
+    icon.classList.add('el-table__expand-icon--expanded');
+  });
+});
+</script>
+</body></html>
